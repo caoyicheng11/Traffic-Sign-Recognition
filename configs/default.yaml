@@ -1,0 +1,84 @@
+with_test: true
+log_iter: 10
+save_iter: 1000
+total_iter: 10000
+restore_ckpt_strict: true
+restore_hint: 0
+optimizer_reset: false
+scheduler_reset: false
+save_path: output
+save_name: Baseline
+
+model_cfg:
+  model: Baseline
+  backbone_cfg:
+    block: BasicBlock
+    in_channel: 3
+    channels: # Layers configuration for automatically model construction
+      - 32
+      - 64
+      - 128
+      - 256
+    layers:
+      - 1
+      - 2
+      - 2
+      - 1
+    strides:
+      - 1
+      - 2
+      - 2
+      - 1
+    maxpool: true
+  SeparateFCs:
+    in_channels: 256
+    out_channels: 128
+    parts_num: 31
+  SeparateBNNecks:
+    class_num: 43
+    in_channels: 128
+    parts_num: 31
+  bin_num:
+    - 16
+    - 8
+    - 4
+    - 2
+    - 1
+
+loss_cfg:
+  triplet:
+    loss_term_weight: 1.0
+    margin: 0.2
+  softmax:
+    loss_term_weight: 1.0
+    scale: 16
+    log_accuracy: true
+
+optimizer_cfg:
+  lr: 0.1
+  momentum: 0.9
+  weight_decay: 0.0005
+
+scheduler_cfg:
+  gamma: 0.1
+  milestones: # Learning Rate Reduction at each milestones
+    - 20000
+    - 40000
+    - 50000
+
+data_cfg:
+  dataset_name: GTSRB
+  root_dir: datasets/GTSRB
+  train_path: datasets/GTSRB/Train.csv
+  test_path: datasets/GTSRB/Test.csv
+  meta_path: datasets/GTSRB/Meta.csv
+  num_workers: 1
+
+  train_sampler:
+    batch_shuffle: true
+    batch_size:
+      - 16 # TripletSampler, batch_size[0] indicates Number of Identity
+      - 32 #                 batch_size[1] indicates Samples sequqnce for each Identity
+
+  test_sampler:
+    batch_size: 32
