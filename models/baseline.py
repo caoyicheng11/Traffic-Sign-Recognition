@@ -50,6 +50,8 @@ class Baseline(nn.Module):
         if self.restore_hint != 0:
             self.resume_ckpt(self.restore_hint)
 
+        self.msg_mgr.log_info(cfgs)
+
     def build_network(self, model_cfg):
         self.Backbone = ResNet9(**model_cfg['backbone_cfg'])
         self.FCs = SeparateFCs(**model_cfg['SeparateFCs'])
