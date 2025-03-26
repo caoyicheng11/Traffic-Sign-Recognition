@@ -68,12 +68,24 @@ scheduler_cfg:
 
 data_cfg:
   dataset_name: GTSRB
-  root_dir: datasets/GTSRB
-  train_path: datasets/GTSRB/Train.csv
-  test_path: datasets/GTSRB/Test.csv
-  meta_path: datasets/GTSRB/Meta.csv
+  root_dir: datasets/GTSRB_cropped
+  train_path: datasets/GTSRB_cropped/Train.csv
+  test_path: datasets/GTSRB_cropped/Test.csv
+  meta_path: datasets/GTSRB_cropped/Meta.csv
   num_workers: 1
 
+  RandomRotate:
+    prob: 0.2
+    degree: 10
+  RandomBrightness:
+    prob: 0.2
+    delta:
+    - -0.1
+    - 0.1
+  RandomBlur:
+    prob: 0.2
+    size: 5
+  
   train_sampler:
     batch_shuffle: true
     batch_size:

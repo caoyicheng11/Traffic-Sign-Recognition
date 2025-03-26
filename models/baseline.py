@@ -5,10 +5,10 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.utils.data as tordata
-from torchvision.transforms import Compose, ToTensor
+from torchvision.transforms import Compose
 from backbones.resnet import ResNet9 
 from data.dataset import DataSet
-from data.transform import BaseTransform
+from data.transform import BaseTransform, RandomRotate, RandomBrightness, RandomBlur
 from data.sampler import TripletSampler, InferenceSampler
 from losses.triplet import TripletLoss
 from losses.ce import CrossEntropyLoss
@@ -72,8 +72,12 @@ class Baseline(nn.Module):
         self.train2_sampler = InferenceSampler(dataset=self.train_dataset, **data_cfg['test_sampler'])
         self.test_sampler = InferenceSampler(dataset=self.test_dataset, **data_cfg['test_sampler'])
         self.meta_sampler = InferenceSampler(dataset=self.meta_dataset, **data_cfg['test_sampler'])
-
-        self.train_transform = Compose([BaseTransform()])
+        
+        self.train_transform = Compose([
+            RandomBrightness(**data_cfg['RandomBrightness']),
+            RandomBlur(**data_cfg['RandomBlur']),
+            RandomRotate(**data_cfg['RandomRotate']),
+            BaseTransform()])
         self.test_transform = Compose([BaseTransform()])
         self.meta_transform = Compose([BaseTransform()])
         
@@ -116,8 +120,8 @@ class Baseline(nn.Module):
 
     def inputs_pretreament(self, inputs):
         imgs, labs = inputs
-        imgs = self.train_transform(imgs)
-        imgs = imgs.float()
+        imgs = self.train_transform(ts2np(imgs))
+        imgs = torch.Tensor(imgs).float()
         return imgs.to(self.device), labs.to(self.device)
 
     def forward(self, inputs):
