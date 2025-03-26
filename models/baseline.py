@@ -118,9 +118,10 @@ class Baseline(nn.Module):
                     nn.init.normal_(m.weight.data, 1.0, 0.02)
                     nn.init.constant_(m.bias.data, 0.0)
 
-    def inputs_pretreament(self, inputs):
+    def inputs_pretreament(self, inputs, training):
         imgs, labs = inputs
-        imgs = self.train_transform(ts2np(imgs))
+        transform = self.train_transform if training else self.test_transform
+        imgs = transform(ts2np(imgs))
         imgs = torch.Tensor(imgs).float()
         return imgs.to(self.device), labs.to(self.device)
 
@@ -145,7 +146,7 @@ class Baseline(nn.Module):
                 'softmax': {'logits': logits, 'labels': labs}
             },
             'visual_summary': {
-                'images': imgs
+                'image': imgs
             },
             'inference_feat': {
                 'embeddings': embed,
@@ -233,7 +234,7 @@ class Baseline(nn.Module):
         rest_size = total_size
         info_dict = Odict()
         for inputs in loader:
-            ipts = self.inputs_pretreament(inputs)
+            ipts = self.inputs_pretreament(inputs, training=False)
             retval = self.forward(ipts)
             inference_feat = retval['inference_feat']
             for k, v in inference_feat.items():
@@ -255,7 +256,7 @@ class Baseline(nn.Module):
     def run_train(model):
         """Accept the instance object(model) here, and then run the train loop."""
         for inputs in model.train_loader:
-            ipts = model.inputs_pretreament(inputs)
+            ipts = model.inputs_pretreament(inputs, training=True)
             retval = model(ipts)
             training_feat, visual_summary = retval['training_feat'], retval['visual_summary']
             del retval
@@ -267,7 +268,7 @@ class Baseline(nn.Module):
             visual_summary.update(loss_info)
             visual_summary['scalar/learning_rate'] = model.optimizer.param_groups[0]['lr']
 
-            model.msg_mgr.train_step(loss_info)
+            model.msg_mgr.train_step(loss_info, visual_summary)
             if model.iteration % model.save_iter == 0:
                 # save the checkpoint
                 model.save_ckpt(model.iteration)
