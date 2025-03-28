@@ -6,9 +6,18 @@ import torch.utils.data as tordata
 
 class DataSet(tordata.Dataset):
     def __init__(self, csv_path, root_dir):
-        self.df = pd.read_csv(csv_path)
         self.root_dir = root_dir
-        
+
+        if isinstance(csv_path, str):
+            self.df = pd.read_csv(csv_path)
+        elif isinstance(csv_path, list):
+            dfs = []
+            for path in csv_path:
+                dfs.append(pd.read_csv(path))
+            self.df = pd.concat(dfs, ignore_index=True)
+        else:
+            raise TypeError('csv_path must be a str or list')
+
         self.image_paths = self.df['Path'].values
         self.label_list = self.df['ClassId'].astype(int).values
 

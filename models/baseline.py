@@ -65,11 +65,10 @@ class Baseline(nn.Module):
         self.meta_path = data_cfg['meta_path']
 
         self.train_dataset = DataSet(csv_path=self.train_path, root_dir=self.root_dir)
-        self.test_dataset = DataSet(csv_path=self.test_path, root_dir=self.root_dir)
+        self.test_dataset = DataSet(csv_path=[self.train_path, self.test_path], root_dir=self.root_dir)
         self.meta_dataset = DataSet(csv_path=self.meta_path, root_dir=self.root_dir)
         
         self.train_sampler = TripletSampler(dataset=self.train_dataset, **data_cfg['train_sampler'])
-        self.train2_sampler = InferenceSampler(dataset=self.train_dataset, **data_cfg['test_sampler'])
         self.test_sampler = InferenceSampler(dataset=self.test_dataset, **data_cfg['test_sampler'])
         self.meta_sampler = InferenceSampler(dataset=self.meta_dataset, **data_cfg['test_sampler'])
         
@@ -86,11 +85,6 @@ class Baseline(nn.Module):
             batch_sampler=self.train_sampler,
             num_workers=1
         )
-        self.train2_loader = tordata.DataLoader(
-            dataset=self.train_dataset,
-            batch_sampler=self.train2_sampler,
-            num_workers=1
-        )
         self.test_loader = tordata.DataLoader(
             dataset=self.test_dataset,
             batch_sampler=self.test_sampler,
@@ -101,7 +95,6 @@ class Baseline(nn.Module):
             batch_sampler=self.meta_sampler,
             num_workers=1
         )
-
 
     def init_parameters(self):
         for m in self.modules():
