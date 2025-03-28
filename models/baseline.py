@@ -285,11 +285,10 @@ class Baseline(nn.Module):
         logits = info_dict['logits']
         labels = info_dict['labels']
 
-        n, c, p = logits.shape
-        logits = logits.astype(np.float32)
-        labels = labels[:, np.newaxis]
-        pred = np.argmax(logits, axis=1)
-        accu = (pred == labels).astype(np.float32).mean()
+        pred = np.sum(logits, axis=2)
+        pred = np.argmax(pred, axis=1)
+
+        accu = (pred == labels).mean()
         model.msg_mgr.log_info(f'Accuracy: {accu*100}%')
 
         return info_dict
