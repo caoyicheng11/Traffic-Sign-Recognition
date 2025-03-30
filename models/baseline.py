@@ -276,9 +276,8 @@ class Baseline(nn.Module):
             if model.iteration >= model.total_iter:
                 break
 
-    @ staticmethod
+    @staticmethod
     def run_test(model):
-        """Accept the instance object(model) here, and then run the test loop."""
         with torch.no_grad():
             info_dict = model.inference()
 
@@ -286,9 +285,17 @@ class Baseline(nn.Module):
         labels = info_dict['labels']
 
         pred = np.sum(logits, axis=2)
-        pred = np.argmax(pred, axis=1)
+        top1_pred = np.argmax(pred, axis=1)
+        top5_pred = np.argsort(pred, axis=1)[:, -5:]
 
-        accu = (pred == labels).mean()
-        model.msg_mgr.log_info(f'Accuracy: {accu*100}%')
+        top1_accu = (top1_pred == labels).mean()
+        top5_accu = np.any(top5_pred == labels.reshape(-1, 1), axis=1).mean()
+        
+        model.msg_mgr.log_info(f'Top-1 Accuracy: {top1_accu*100:.2f}%')
+        model.msg_mgr.log_info(f'Top-5 Accuracy: {top5_accu*100:.2f}%')
 
+        info_dict['top1_accuracy'] = top1_accu
+        info_dict['top5_accuracy'] = top5_accu
+        
         return info_dict
+
