@@ -38,6 +38,12 @@ model_cfg:
     class_num: 43
     in_channels: 128
     parts_num: 31
+  FCs:
+    in_channels: 256
+    out_channels: 128
+  BNNecks:
+    class_num: 43
+    in_channels: 128
   bin_num:
     - 16
     - 8

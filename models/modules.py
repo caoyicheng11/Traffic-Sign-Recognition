@@ -99,3 +99,50 @@ class SeparateBNNecks(nn.Module):
         else:
             logits = feature.matmul(self.fc_bin)
         return feature.permute(1, 2, 0).contiguous(), logits.permute(1, 2, 0).contiguous()
+
+class FCs(nn.Module):
+    def __init__(self, in_channels, out_channels, norm=False):
+        super(FCs, self).__init__()
+        self.fc = nn.Linear(in_channels, out_channels)
+        nn.init.xavier_uniform_(self.fc.weight)
+        if self.fc.bias is not None:
+            nn.init.zeros_(self.fc.bias)
+        self.norm = norm
+
+    def forward(self, x):
+        """
+            x: [n, c_in]
+            out: [n, c_out]
+        """
+        if self.norm:
+            weight = F.normalize(self.fc.weight, dim=0)
+            out = F.linear(x, weight, self.fc.bias)
+        else:
+            out = self.fc(x)
+        return out
+
+class BNNecks(nn.Module):
+
+    def __init__(self, in_channels, class_num, norm=True, parallel_BN1d=True):
+        super(BNNecks, self).__init__()
+        self.class_num = class_num
+        self.norm = norm
+        self.bn1d = nn.BatchNorm1d(in_channels)
+        self.fc = nn.Linear(in_channels, class_num)
+        nn.init.xavier_uniform_(self.fc.weight)
+        if self.fc.bias is not None:
+            nn.init.zeros_(self.fc.bias)
+
+    def forward(self, x):
+        """
+            x: [n, c]
+        """
+        x = self.bn1d(x)
+        feature = x
+        if self.norm:
+            feature = F.normalize(feature, dim=-1)  # [n, c]
+            weight = F.normalize(self.fc.weight, dim=0)
+            logits = F.linear(feature, weight, self.fc.bias)
+        else:
+            logits = self.fc(feature)
+        return feature, logits

@@ -15,7 +15,7 @@ from losses.ce import CrossEntropyLoss
 from losses.loss_aggregator import LossAggregator
 from utils.common import ts2np, Odict, mkdir
 from utils.msg_manager import msg_mgr
-from models.modules import HorizontalPoolingPyramid, SeparateFCs, SeparateBNNecks
+from models.modules import HorizontalPoolingPyramid, SeparateFCs, SeparateBNNecks, FCs, BNNecks
 
 class Baseline(nn.Module):
 
@@ -54,9 +54,15 @@ class Baseline(nn.Module):
 
     def build_network(self, model_cfg):
         self.Backbone = ResNet9(**model_cfg['backbone_cfg'])
-        self.FCs = SeparateFCs(**model_cfg['SeparateFCs'])
-        self.BNNecks = SeparateBNNecks(**model_cfg['SeparateBNNecks'])
-        self.HPP = HorizontalPoolingPyramid(model_cfg['bin_num'])
+        self.with_separate = model_cfg['with_separate']
+        if self.with_separate:
+            self.FCs = SeparateFCs(**model_cfg['SeparateFCs'])
+            self.BNNecks = SeparateBNNecks(**model_cfg['SeparateBNNecks'])
+            self.HPP = HorizontalPoolingPyramid(model_cfg['bin_num'])
+        else:
+            self.FCs = FCs(**model_cfg['FCs'])
+            self.BNNecks = BNNecks(**model_cfg['BNNecks'])
+            self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
 
     def init_loader(self, data_cfg):
         self.root_dir = data_cfg['root_dir']
@@ -127,10 +133,19 @@ class Baseline(nn.Module):
         outs = self.Backbone(imgs)  # [n, c, h, w]
 
         # Horizontal Pooling Matching, HPM
-        feat = self.HPP(outs)  # [n, c, p]
+        if self.with_separate:
+            feat = self.HPP(outs)  # [n, c, p]
+        else:
+            feat = self.avgpool(outs)
+            feat = torch.flatten(feat, 1)
 
         embed_1 = self.FCs(feat)  # [n, c, p]
         embed_2, logits = self.BNNecks(embed_1)  # [n, c, p]
+
+        if not self.with_separate:
+            embed_1 = embed_1.unsqueeze(2)
+            logits = logits.unsqueeze(2)
+
         embed = embed_1
 
         retval = {
