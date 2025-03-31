@@ -37,6 +37,33 @@ class HorizontalPoolingPyramid():
             features.append(z)
         return torch.cat(features, -1)
 
+class GridPoolingPyramid():
+
+    def __init__(self, bin_num=None):
+        if bin_num is None:
+            bin_num = [8, 4, 2, 1]
+        self.bin_num = bin_num
+
+    def __call__(self, x):
+        """
+            x  : [n, c, h, w]
+            ret: [n, c, p] 
+        """
+        n, c = x.size()[:2]
+        features = []
+        
+        for b in self.bin_num:
+            grid = x.view(n, c, b, x.size(2) // b, b, x.size(3) // b)
+            
+            grid = grid.permute(0, 1, 2, 4, 3, 5)
+            grid = grid.contiguous().view(n, c, -1, grid.size(-2)*grid.size(-1))
+            
+            pooled = grid.mean(-1) + grid.max(-1)[0]
+            features.append(pooled)
+            
+        return torch.cat(features, dim=-1)
+
+
 class SeparateFCs(nn.Module):
     def __init__(self, parts_num, in_channels, out_channels, norm=False):
         super(SeparateFCs, self).__init__()
